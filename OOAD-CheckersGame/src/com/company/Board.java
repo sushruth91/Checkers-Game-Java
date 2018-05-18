@@ -6,7 +6,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.EmptyStackException;
 import java.util.HashMap;
@@ -187,35 +186,79 @@ public class Board extends JPanel implements ActionListener {
      */
 
 
-    private void doNextMove(){
-
-        if (!gameInProgress)
-            message.setText("Click \"New Game\" to start a new game.");
+    private void doNextMove() {
+        if (!gameInProgress) message.setText("Click \"New Game\" to start a new game.");
         else {
 
+            String move = movesFromFile.get(moveCount);
+
+            liveMoves.push(move);
+            int fromrow = 0;
+            int fromcol = 0;
+            int torow = 0;
+            int tocol = 0;
+            String[] coordinates = move.split(",");
+
+            String[] separetedValues = coordinates[0].split("-");
+            String[] separatedValues1 = coordinates[1].split("-");
+            fromrow= Integer.parseInt(separetedValues[0]);
+            fromcol = Integer.parseInt(separetedValues[1]);
+            torow = Integer.parseInt(separatedValues1[0]);
+            tocol = Integer.parseInt(separatedValues1[1]);
 
 
-                String move = movesFromFile.get(moveCount);
 
-                liveMoves.push(move);
-               // board.currentState();
-                String[] coordinates = move.split(",");
-                for ( j = 0; j < coordinates.length; j++) {
-                    String[] separetedValues = coordinates[j].split("-");
+            board.currentState();
+                if (currentPlayer == CheckersData.RED) {
 
 
-                        int col = Integer.parseInt(separetedValues[1]);
-                        int row = Integer.parseInt(separetedValues[0]);
-                        if (col >= 0 && col < 8 && row >= 0 && row < 8)
-                            doSelectSquare(row, col);
+
+                    verifyMove(fromrow, fromcol, torow, tocol);
+                } else if (currentPlayer == CheckersData.BLACK) {
+
+                    verifyMove(fromrow, fromcol, torow, tocol);
+
+                    }
 
                 }
-                    board.currentState();
+            }
 
 
-
+    private void verifyMove(int fromrow, int fromcol, int torow, int tocol ) {
+        while (true) {
+            if (fromrow - torow > 2 && fromcol - tocol > 2) { //left upper side for red
+                int introw = fromrow - 2;
+                int intcol = fromcol - 2;
+                doSelectSquare(fromrow, fromcol, introw, intcol);
+                fromrow = introw;
+                fromcol = intcol;
+            }
+            else if (fromrow - torow > 2 && fromcol - tocol < -2) { //right upper side for red
+                int introw = fromrow - 2;
+                int intcol = fromcol + 2;
+                doSelectSquare(fromrow, fromcol, introw, intcol);
+                fromrow = introw;
+                fromcol = intcol;
+            }
+            else if (fromrow - torow < -2 && fromcol - tocol > 2) {//left lower corner for red
+                int introw = fromrow + 2;
+                int intcol = fromcol - 2;
+                doSelectSquare(fromrow, fromcol, introw, intcol);
+                fromrow = introw;
+                fromcol = intcol;
+            }
+            else if (fromrow - torow < -2 && fromcol - tocol < -2) {//right lower corner for red
+                int introw = fromrow + 2;
+                int intcol = fromcol + 2;
+                doSelectSquare(fromrow, fromcol, introw, intcol);
+                fromrow = introw;
+                fromcol = intcol;
+            } else {
+                doSelectSquare(fromrow, fromcol, torow, tocol);
+                break;
             }
         }
+    }
 
     /**
      *  Previous button clicked---
@@ -316,67 +359,39 @@ public class Board extends JPanel implements ActionListener {
      * Next button.  It has already checked
      * that a game is, in fact, in progress.
      */
-    private void doSelectSquare(int row, int col) {
+    private void doSelectSquare(int row, int col, int r2, int c2) {
 
          /* If the player selected on one of the pieces that the player
           can move, mark this row and col as selected and return.  (This
           might change a previous selection.)  Reset the message, in
           case it was previously displaying an error message. */
-
-        for (int i = 0; i < legalMoves.length; i++)
+        boolean valid = false;
+        // System.out.println(validMoves.length);
+        for (int i = 0; i < legalMoves.length; i++) {
+            // System.out.println(validMoves[i].fromRow + " " + validMoves[i].fromCol);
             if (legalMoves[i].getFromRow() == row && legalMoves[i].getFromCol() == col) {
                 selectedRow = row;
                 selectedCol = col;
+                valid = true;
                 if (currentPlayer == CheckersData.RED)
                     message.setText("RED:  Make your move.");
                 else
                     message.setText("BLACK:  Make your move.");
                 repaint();
-                return;
             }
-
-
-
-
-
-         /* If no piece has been selected to be moved, the user must first
-          select a piece.  Show an error message and return. */
-
-        if (selectedRow < 0) {
-            String[] keys1 = liveMoves.peek().split(",");
-            isValid=false;
-            JOptionPane.showMessageDialog(null,"Invalid Move From "+ String.valueOf(matchValues.get(keys1[0]))+ " To "+ String.valueOf(matchValues.get((keys1[1]))));
-            moveCount++;
-            j++;
-            message.setText("Click the piece you want to move.");
-            return;
         }
-
-         /* If the user selected a square where the selected piece can be
-          legally moved, then make the move and return. */
-
+        if(!valid) {
+            String[] keys = liveMoves.peek().split(",");
+            JOptionPane.showMessageDialog(null, "Invalid Move From " + String.valueOf(matchValues.get(keys[0])) + " To " + String.valueOf(matchValues.get((keys[1]))));
+            moveCount++;
+        }
         for (int i = 0; i < legalMoves.length; i++)
             if (legalMoves[i].getFromRow() == selectedRow && legalMoves[i].getFromCol() == selectedCol
-                    && legalMoves[i].getToRow() == row && legalMoves[i].getToCol() == col) {
-                moveCount++;
+                    && legalMoves[i].getToRow() == r2 && legalMoves[i].getToCol() == c2) {
                 doMakeMove(legalMoves[i]);
+                moveCount++;
                 return;
             }
-
-
-
-
-         /* If we get to this point, there is a piece selected, and the square where
-          the user just clicked is not one where that piece can be legally moved.
-          Show an error message. */
-        String[] keys = liveMoves.peek().split(",");
-
-
-            isValid=false;
-            JOptionPane.showMessageDialog(null, "Invalid Move From " + String.valueOf(matchValues.get(keys[0])) + " To " + String.valueOf(matchValues.get((keys[1]))));
-            //message.setText("Click the square you want to move to.");
-            moveCount++;
-            j++;
 
 
 
